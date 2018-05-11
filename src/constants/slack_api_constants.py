@@ -11,3 +11,6 @@ CALL_CHAT_POST_MESSAGE = "chat.postMessage"
 # Terms
 SLACK_CLIENT_NAME = "slackclient"
 CHANNELS = "channels"
+MESSAGE_TEXT = "text"
+SLACK_CHANNEL = "channel"
+SLACK_USER = "user"

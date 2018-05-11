@@ -15,6 +15,7 @@ BOT_NAME = "doddle"
 ROOT_LOGGING_IDENTITY = "doddle"
 ENVIRONMENT_VARIABLE_BOT_ID = "BOT_ID"
 ENVIRONMENT_VARIABLE_BOT_TOKEN = "SLACK_BOT_TOKEN"
+HELP_COMMAND_TEXT = "help"
 
 """
 LOGGING CONSTANTS
@@ -24,7 +25,7 @@ LOG_NAME = "doddle.log"
 LOG_CONFIG = "%s(asctime)s - %s(name)s - %s(levelname)s - %(message)s"
 LOG_LEVEL = logging.DEBUG
 
-SLACK_API_CLIENT_LOG_LEGEL = logging.DEBUG
+SLACK_API_CLIENT_LOG_LEVEL = logging.DEBUG
 
 """
 PLUGIN CONSTANTS

@@ -75,10 +75,8 @@ class DoddleUtil(object):
 
         >>>
         """
-
         try:
             value = self.bot_config.get(section, option)
-
         except ConfigParser.NoOptionError:
             log.error("Encountered no option error %s" % ConfigParser.NoOptionError.message)
             log.info("No option provided, adding the default to the config, write and return default")

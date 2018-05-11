@@ -40,7 +40,6 @@ class commandParser:
 
         >> {'wildcard1': 'meaninglessInput', 'command': 'start', 'target': 'machine1'}
         """
-
         parsed_commands = {}
         tmp_dict = {}
         tmp_known_values = []

@@ -2,6 +2,7 @@
 :author: john.sosoka
 :date: 5/10/2018
 
+Collection of custom doddle exceptions.
 """
 
 

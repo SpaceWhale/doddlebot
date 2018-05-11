@@ -2,6 +2,23 @@
 :author: john.sosoka
 :date: 5/10/2018
 
+This class is the slack client for the doddle bot and is the backbone for the entire framework.
+Client gets passed into every imported plugin and provides functions needed to interface with the
+slack api such as
+    :reply_to_channel:
+
+Every custom plugin needs the following functions:
+    :register_plugin(self):
+        -- pass an instance of the plugin to the plugin registry. This adds the plugin to a list of plugins which get
+           commands broadcast to them via the :on_command: function.
+
+    :register_command(example, about):
+        -- register plugin information for the bots help reply.
+
+    :on_command(parts, channel):
+        -- The client will broadcast parts & channel to every registered plugin
+            * parts = a space-delimited list of words following the action character
+            * channnel = the slack_id (channel or user) which sent the message
 """
 
 # custom
@@ -23,6 +40,7 @@ class Client:
 
     def __init__(self, bot_id, token, actionCharacter, websocket_delay=1):
         """
+        This initializes the doddle slack client.
 
         :param bot_id:
             str -- the bot_id
@@ -30,7 +48,7 @@ class Client:
             str -- the slack doken
         :param actionCharacter:
             str -- this is the character the bot listens to to process a command, if it is the first character
-                   (i.e, !help) the bot will process this message with ! being the actionCharacter
+                   (i.e, !help) the bot will process this message with "!" being the actionCharacter
         :param websocket_delay:
             int -- sets how frequently (in seconds) that the bot queries the rtm api
         :return:
@@ -57,6 +75,14 @@ class Client:
         self.connected_status = False
 
     def start(self):
+        """
+        This connects the slack client to the slack api. While this method doesn't return anything, it does capture
+        messages from slack, determines if it should be broadcasted to the plugin list and broadcasts the message to
+        registered plugins if all criteria are satisfied.
+
+        :return:
+            nothing.
+        """
         self.slack_client = SlackClient(self.token)
 
         if self.slack_client.rtm_connect():
@@ -85,18 +111,22 @@ class Client:
     def reply_to_channel(self, channel, text, attatchments=None):
         """
         :param channel:
+            string -- the channel/user where the message originated from.
         :param attatchments:
+            dict/json -- allows for better slack messaging.
+                * See https://api.slack.com/docs/message-attachments
         :return:
+            nothing -- This doesn't return anything to the caller function, instead if sends a message via the rtm_api
         """
-        attatchment = None
-        if attatchments:
-            attatchment = json.dumps(attatchments)
+        attachments = None
+        if attachments:
+            attachment = json.dumps(attatchments)
 
         self.slack_client.api_call(slack_api_constants.CALL_CHAT_POST_MESSAGE,
                                    channel=channel,
                                    text=text,
                                    as_user=True,
-                                   attatchments=attatchment)
+                                   attatchments=attachment)
 
     def reply_to_thread(self):
         """
@@ -112,20 +142,21 @@ class Client:
         :return:
         """
 
-    def register_command(self, name, about):
+    def register_command(self, example, about):
         """
         Registers a command provided by a plugin by adding the instructions to the "help" reply.
 
-        :param name:
+        :param example:
+            string -- example of the command provided plugin in use
         :param about:
+            string -- a description of the command
         :return:
+            none -- changes application state
 
         :example:
-
-        self.bot.register_command("restart <machine>", "restarts the target machine")
+            self.bot.register_command("restart <machine>", "restarts the target machine")
         """
-
-        self.commands[name] = self.actionChar + about
+        self.commands[example] = self.actionChar + about
 
     def register_plugin(self, plugin):
         """
@@ -133,7 +164,12 @@ class Client:
         function to process the command parts/channel that get broadcast to it.
 
         :param plugin:
+            object -- pass in self, or an instance of the plugin.
         :return:
+            none -- changes application state
+
+        :example:
+            bot.register_plugin(self)
         """
         self.registered_plugins.append(plugin)
 
@@ -142,13 +178,17 @@ class Client:
         Returns the value of the result for the section/option keys provided
 
         :param section:
+            string -- string specifying section of config file
         :param option:
+            string -- string specifying option within the section of config file.
         :param default:
+            string --
         :return:
+            object -- returns value for config field specified
         """
         try:
             return self.config_reader.read_config(section, option, default)
-        except doddle_exceptions.CommandParseException:
+        except doddle_exceptions.ConfigOptionRetrievalException:
             log.error("Unable to read configuration {0} {1}".format(section,
                                                                     option))
 
@@ -174,11 +214,8 @@ class Client:
 
         :return:
             Nothing
-
-        :example:
-
         """
-        log.info("Building channel direcotry.")
+        log.info("Building channel directory.")
         channels = self.slack_client.api_call(slack_api_constants.CALL_CHANNELS_LIST)
         try:
             for channel in channels[slack_api_constants.CHANNELS]:
@@ -208,15 +245,28 @@ class Client:
 
             for output in output_list:
                 try:
-                    if output and "text" in output and self.actionChar in output['text'][0]:
-                        if "help" in output["text"].split(self.actionChar)[1].strip():
-                            self.help(output["user"])
+                    # Check for action character & help text
+                    if output and slack_api_constants.MESSAGE_TEXT in output \
+                            and self.actionChar in output[slack_api_constants.MESSAGE_TEXT][0]:
+                        if app.HELP_COMMAND_TEXT in output[slack_api_constants.MESSAGE_TEXT]\
+                                .split(self.actionChar)[1]\
+                                .strip():
+                            self.help(output[slack_api_constants.SLACK_USER])
 
-                    if output and "text" in output and self.actionChar in output["text"][0]:
-                        return output["text"].split(self.actionChar)[1].strip(), output["channel"]
+                    # Check for action character
+                    if output and slack_api_constants.MESSAGE_TEXT in output \
+                            and self.actionChar in output[slack_api_constants.MESSAGE_TEXT][0]:
+                        return output[slack_api_constants.MESSAGE_TEXT]\
+                                   .split(self.actionChar)[1]\
+                                   .strip(), output[slack_api_constants.SLACK_CHANNEL]
 
-                    elif output and "text" in output and self.at_bot in output["text"]:
-                        return output["text"].split(self.at_bot)[1].strip(), output["channel"]
+                    # Check for @mention
+                    elif output and slack_api_constants.MESSAGE_TEXT in output \
+                            and self.at_bot in output[slack_api_constants.MESSAGE_TEXT]:
+                        return output[slack_api_constants.MESSAGE_TEXT]\
+                                   .split(self.at_bot)[1]\
+                                   .strip(), output[slack_api_constants.SLACK_CHANNEL]
+
                 except doddle_exceptions.CommandParseException:
                     log.error("Unable to parse rtm_output")
         return None, None
@@ -234,10 +284,10 @@ class Client:
         :param channel:
             string -- the channel id that the command was sent from.
         :return:
+            nothing -- broadcasts channel & parts to all registered plugins
         """
         log.debug("Handling command: {0} in channel: {1}".format(command,
                                                                  channel))
-
         parts = command.split()
         for plugin in self.registered_plugins:
             plugin.on_command(channel, parts)
