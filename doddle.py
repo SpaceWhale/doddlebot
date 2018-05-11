@@ -3,12 +3,13 @@
 :date: 5/10/2018
 
 """
-
+# custom
 from src import client
 import src.doddle_exceptions as exceptions
 from src.utilities import doddleUtil
 from src.constants import app
 from src.constants import slack_api_constants
+# 3rd party
 import logging
 import sys
 from os.path import dirname, basename, isfile, abspath
@@ -75,7 +76,7 @@ class Doddle():
         """
         self.log.info("preparing plugin candidates...")
         try:
-            self.modules = glob.globg(dirname(__file__)+app.RELATIVE_PLUGIN_DIRECTORY_PATH+"*/*.py")
+            self.modules = glob.globg(dirname(__file__)+app.RELATIVE_PLUGIN_DIRECTORY_PATH+"*/"+app.PYTHON_FILE)
             self.all_modules = [ basename(f)[:-3] for f in self.modules if isfile(f)]
         except exceptions.PluginPrepareException:
             logging.error("Unable to prepare a list of plugin candidates. The bot might be pretty boring without \

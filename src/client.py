@@ -4,14 +4,15 @@
 
 """
 
+# custom
 from utilities import doddleUtil
 from utilities import commandParser
 from constants import slack_api_constants
 from constants import app
 import doddle_exceptions
+# 3rd party
 import logging
 import time
-import sys
 import json
 from slackclient import SlackClient
 
